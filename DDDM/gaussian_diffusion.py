@@ -70,7 +70,7 @@ def get_sigma_schedule(num_diffusion_timesteps,sigma_min,sigma_max):
 
 
 class LossType(enum.Enum):
-    MSE = enum.auto()  # use raw MSE loss (and KL when learning variances)
+    MSE = enum.auto()  # use raw MSE loss
 
     PH = enum.auto() # Pseudo-Huber
     PL = enum.auto() # Pseudo-LPIPS
@@ -407,7 +407,7 @@ class VE_Diffusion:
         kappa = self.sigma_min/sigma_t
 
         terms = {}
-        model_output = 
+        
         model_output = model(x_t, t, context=condition,**model_kwargs)
         model_output = kappa*x_t + (1-kappa)*model_output
 

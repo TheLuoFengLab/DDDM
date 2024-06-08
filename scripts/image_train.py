@@ -4,16 +4,16 @@ Train a diffusion model on images.
 
 import argparse
 
-from improved_diffusion import dist_util, logger
-from improved_diffusion.image_datasets import load_data
-from improved_diffusion.resample import create_named_schedule_sampler
-from improved_diffusion.script_util import (
+from DDDM import dist_util, logger
+from DDDM.image_datasets import load_data
+from DDDM.resample import create_named_schedule_sampler
+from DDDM.script_util import (
     model_and_diffusion_defaults,
     create_model_and_diffusion,
     args_to_dict,
     add_dict_to_argparser,
 )
-from improved_diffusion.train_util import TrainLoop
+from DDDM.train_util import TrainLoop
 
 
 def main():
@@ -45,7 +45,7 @@ def main():
         batch_size=args.batch_size,
         microbatch=args.microbatch,
         lr=args.lr,
-        epochs=args.epochs
+        epochs=args.epochs,
         ema_rate=args.ema_rate,
         log_interval=args.log_interval,
         save_interval=args.save_interval,
@@ -68,7 +68,7 @@ def create_argparser():
         microbatch=-1,  # -1 disables microbatches
         ema_rate="0.9999",  # comma-separated list of EMA values
         log_interval=10,
-        save_interval=10,
+        save_interval=2,
         resume_checkpoint="",
         use_fp16=False,
         fp16_scale_growth=1e-3,

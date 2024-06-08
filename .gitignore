@@ -1,2 +1,4 @@
 datasets/cifar_train/
 datasets/cifar_test/
+checkpoints/
+.gitignore

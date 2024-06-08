@@ -41,6 +41,7 @@ def load_data(
         shard=MPI.COMM_WORLD.Get_rank(),
         num_shards=MPI.COMM_WORLD.Get_size(),
     )
+    loader = None
     if deterministic:
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True
@@ -49,9 +50,12 @@ def load_data(
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True
         )
+
+    return loader
+    '''
     while True:
         yield from loader
-
+    '''
 
 def _list_image_files_recursively(data_dir):
     results = []

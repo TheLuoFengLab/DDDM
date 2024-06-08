@@ -552,7 +552,7 @@ class UNetModel(nn.Module):
         indices = concat_all_gather(indices)
 
         bz = data.shape[0]
-        print('gathered total size {}:'.format(bz))
+        #print('gathered total size {}:'.format(bz))
         assert indices.shape[0] == bz
         self.x_bar[indices] = data
 

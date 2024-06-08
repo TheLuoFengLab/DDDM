@@ -144,7 +144,7 @@ class TrainLoop:
     def _load_optimizer_state(self):
         main_checkpoint = find_resume_checkpoint() or self.resume_checkpoint
         opt_checkpoint = bf.join(
-            bf.dirname(main_checkpoint), f"opt{self.resume_epoch:05}.pt"
+            bf.dirname(main_checkpoint), f"opt{self.resume_epoch:04d}.pt"
         )
         if bf.exists(opt_checkpoint):
             logger.log(f"loading optimizer state from checkpoint: {opt_checkpoint}")
@@ -159,17 +159,20 @@ class TrainLoop:
 
     def run_loop(self):
         for epoch in range(self.resume_epoch,self.epochs):
-
+            print("Current epoch:{}".format(epoch))
             
             self.train_epoch(self.data,epoch)
-        if epoch%self.log_interval == 0:
-            logger.dumpkvs()
-        if epoch%self.save_interval == 0:
-            self.save(epoch)
+        
+            if epoch % self.save_interval == 0:
+                print('before saving!!!')
+                self.save(epoch)
                 
     def train_epoch(self,data,epoch):
         for i,(batch,cond,index) in enumerate(data):
+            #print("Current batch:{}".format(i))
             self.run_step(batch,cond,index,epoch)
+            if i % self.log_interval == 0:
+                logger.dumpkvs()
 
     def run_step(self, batch, cond,index,epoch):
         self.forward_backward(batch, cond,index,epoch)
@@ -212,12 +215,18 @@ class TrainLoop:
 
             self.model.update_xbar(micro,m_index)
 
-            loss_guide = (losses["guide"] * weights)
-            loss_iter = (losses["iter"] * weights)
+            
+
+            loss_guide = (losses["guide"].view(micro.shape[0],-1) * weights.unsqueeze(1))
+            loss_iter = (losses["iter"].view(micro.shape[0],-1)* weights.unsqueeze(1))
 
             w = 1/(epoch+1)
 
             loss = (w*loss_guide + (1-w)*loss_iter).mean()
+
+            log_loss_dict(
+                self.diffusion, t, {k: v for k, v in losses.items()}
+            )
 
             if self.use_fp16:
                 loss_scale = 2 ** self.lg_loss_scale
@@ -249,24 +258,25 @@ class TrainLoop:
             update_ema(params, self.master_params, rate=rate)
 
     def save(self,epoch):
+        print('inside saving')
         def save_checkpoint(rate, epoch,params):
             state_dict = self._master_params_to_state_dict(params)
             if dist.get_rank() == 0:
                 logger.log(f"saving model {rate}...")
                 if not rate:
-                    filename = f"model{epoch:05d}.pt"
+                    filename = f"model{epoch:04d}.pt"
                 else:
-                    filename = f"ema_{rate}_{epoch:06d}.pt"
+                    filename = f"ema_{rate}_{epoch:04d}.pt"
                 with bf.BlobFile(bf.join(get_blob_logdir(), filename), "wb") as f:
                     th.save(state_dict, f)
 
         save_checkpoint(0, epoch,self.master_params)
         for rate, params in zip(self.ema_rate, self.ema_params):
-            save_checkpoint(rate, params)
+            save_checkpoint(rate, epoch,params)
 
         if dist.get_rank() == 0:
             with bf.BlobFile(
-                bf.join(get_blob_logdir(), f"opt{epoch:05d}.pt"),
+                bf.join(get_blob_logdir(), f"opt{epoch:04d}.pt"),
                 "wb",
             ) as f:
                 th.save(self.opt.state_dict(), f)
@@ -327,3 +337,11 @@ def find_ema_checkpoint(main_checkpoint, step, rate):
     return None
 
 
+
+def log_loss_dict(diffusion, ts, losses):
+    for key, values in losses.items():
+        logger.logkv_mean(key, values.mean().item())
+        # Log the quantiles (four quartiles, in particular).
+        #for sub_t, sub_loss in zip(ts.cpu().numpy(), values.detach().cpu().numpy()):
+        #    quartile = int(4 * sub_t / diffusion.num_timesteps)
+        #    logger.logkv_mean(f"{key}_q{quartile}", sub_loss)
