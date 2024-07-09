@@ -6,5 +6,6 @@ setup(
     install_requires=["blobfile>=1.0.5", 
         "torch",
         "tqdm",
-        "piq"]
+        "piq",
+        "mpi4py"]
 )
