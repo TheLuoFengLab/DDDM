@@ -291,10 +291,11 @@ class VE_Diffusion:
         sigmas = np.array(sigmas, dtype=np.float64)
         self.sigmas = sigmas
         assert len(sigmas.shape) == 1, "sigmas must be 1-D"
-        assert (sigmas > 0).all() and (sigmas <= 1).all()
+        #assert (sigmas > 0).all() and (sigmas <= 1).all()
+        assert (sigmas > 0).all()
 
         self.num_timesteps = int(sigmas.shape[0])
-        self.sigma_min = simgas[0]
+        self.sigma_min = sigmas[0]
         self.sigma_max = sigmas[-1]
 
       

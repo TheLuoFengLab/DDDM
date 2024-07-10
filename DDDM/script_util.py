@@ -155,7 +155,7 @@ def create_gaussian_diffusion(
         return gd.VP_Diffusion(betas,loss_type,c)
     else:
         sigmas = gd.get_sigma_schedule(steps,sigma_min,sigma_max)
-        return gd.VE_Diffusion(steps,loss_type,c)
+        return gd.VE_Diffusion(sigmas,loss_type,c)
     
 
 
